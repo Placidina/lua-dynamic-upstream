@@ -325,5 +325,5 @@ This module meets the needs of the [`lua-upstream-nginx-module`](https://github.
 ## See Also
 
 * the ngx_lua module: https://github.com/openresty/lua-nginx-module
-* the lua-dynamic-healthcheck module: https://github.com/Placidina/lua-dynamic-healthcheck
+* the lua-dynamic-healthcheck library: https://github.com/Placidina/lua-dynamic-healthcheck
 * OpenResty: http://openresty.org
