@@ -64,28 +64,38 @@ make install
 
 ## Functions
 
-- [x] `list_zones` - Return all upstream zone names.
-- [x] `describe_zone` - Return all peers in upstream zone.
-- [x] `add_peer` - Add new peer in upstream zone.
-- [x] `remove_peer` - Remove peer in upstream zone.
-- [x] `set_peer_down` - Set peer down or up.
+- [x] `list_zones`
+- [x] `describe_zone`
+- [x] `add_peer`
+- [x] `remove_peer`
+- [x] `set_peer_down`
 
 ### list_zones
+
+Return all upstream zone names.
 
 TODO:
 
 ### describe_zone
 
+Return all peers in upstream zone.
+
 TODO:
 
 ### add_peer
+
+Add new peer in upstream zone.
 
 TODO:
 
 ### remove_peer
 
+Remove peer in upstream zone.
+
 TODO:
 
 ### set_peer_down
+
+Set peer down or up.
 
 TODO:
