@@ -45,7 +45,7 @@ static ngx_int_t lua_dynamic_upstream_init(ngx_conf_t *cf) {
 }
 
 static int lua_dynamic_upstream_create_module(lua_State *L) {
-    lua_createtable(L, 0, 4);
+    lua_createtable(L, 0, 5);
 
     lua_pushcfunction(L, lua_dynamic_upstream_list_zones);
     lua_setfield(L, -2, "list_zones");
@@ -55,6 +55,9 @@ static int lua_dynamic_upstream_create_module(lua_State *L) {
 
     lua_pushcfunction(L, lua_dynamic_upstream_add_peer);
     lua_setfield(L, -2, "add_peer");
+
+    lua_pushcfunction(L, lua_dynamic_upstream_remove_peer);
+    lua_setfield(L, -2, "remove_peer");
 
     lua_pushcfunction(L, lua_dynamic_upstream_set_peer_down);
     lua_setfield(L, -2, "set_peer_down");

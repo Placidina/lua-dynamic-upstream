@@ -4,11 +4,14 @@
 #include <ngx_http.h>
 
 #include <lauxlib.h>
-#include "lua_inet_slab.h"
 #include "ngx_http_lua_api.h"
+
+#include "lua_dynamic_upstream_module.h"
+#include "lua_inet_slab.h"
 
 static ngx_http_upstream_srv_conf_t *lua_dynamic_upstream_get_zone(lua_State *L, ngx_str_t *zone);
 static ngx_int_t lua_dynamic_upstream_describe_peer(lua_State *L, ngx_http_upstream_rr_peer_t *peer);
+static ngx_int_t lua_dynamic_upstream_is_shpool_range(ngx_http_request_t *r, ngx_slab_pool_t *shpool, void *p);
 
 static ngx_http_upstream_srv_conf_t *lua_dynamic_upstream_get_zone(lua_State *L, ngx_str_t *zone) {
     ngx_uint_t i;
@@ -96,6 +99,14 @@ static ngx_int_t lua_dynamic_upstream_describe_peer(lua_State *L, ngx_http_upstr
         lua_pushliteral(L, "down");
         lua_pushboolean(L, 1);
         lua_rawset(L, -3);
+    }
+
+    return 1;
+}
+
+static ngx_int_t lua_dynamic_upstream_is_shpool_range(ngx_http_request_t *r, ngx_slab_pool_t *shpool, void *p) {
+    if ((u_char *)p < shpool->start || (u_char *)p > shpool->end) {
+        return 0;
     }
 
     return 1;
@@ -273,6 +284,102 @@ int lua_dynamic_upstream_add_peer(lua_State *L) {
 
     peers->number++;
     peers->total_weight += last->next->weight;
+    peers->single = (peers->number == 1);
+    peers->weighted = (peers->total_weight != peers->number);
+
+    ngx_shmtx_unlock(&shpool->mutex);
+    lua_pushboolean(L, 1);
+
+    return 1;
+}
+
+int lua_dynamic_upstream_remove_peer(lua_State *L) {
+    ngx_http_upstream_srv_conf_t *uscf;
+    ngx_http_upstream_rr_peer_t *peer, *target, *prev;
+    ngx_http_upstream_rr_peers_t *peers;
+    ngx_slab_pool_t *shpool;
+    ngx_http_request_t *r;
+    ngx_str_t zone, server;
+    ngx_uint_t weight;
+
+    if (lua_gettop(L) != 2) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "exactly 2 arguments expected\n");
+        return 2;
+    }
+
+    r = ngx_http_lua_get_request(L);
+    if (r == NULL) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "get request error \n");
+        return 2;
+    }
+
+    zone.data = (u_char *)luaL_checklstring(L, 1, &zone.len);
+    server.data = (u_char *)luaL_checklstring(L, 2, &server.len);
+
+    uscf = lua_dynamic_upstream_get_zone(L, &zone);
+    if (uscf == NULL) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "zone not found\n");
+        return 2;
+    }
+
+    peers = uscf->peer.data;
+    if (peers->number < 2) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "not permitted to remove all servers\n");
+        return 2;
+    }
+
+    target = NULL;
+    prev = NULL;
+
+    for (peer = peers->peer; peer; peer = peer->next) {
+        if (server.len == peer->name.len && ngx_strncmp(server.data, peer->name.data, peer->name.len) == 0) {
+            target = peer;
+            peer = peer->next;
+            break;
+        }
+
+        prev = peer;
+    }
+
+    if (target == NULL) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "peer not found\n");
+        return 2;
+    }
+
+    weight = target->weight;
+    shpool = (ngx_slab_pool_t *)uscf->shm_zone->shm.addr;
+    ngx_shmtx_lock(&shpool->mutex);
+
+    if (lua_dynamic_upstream_is_shpool_range(r, shpool, target->name.data)) {
+        ngx_slab_free_locked(shpool, target->name.data);
+    }
+
+    if (lua_dynamic_upstream_is_shpool_range(r, shpool, target->sockaddr)) {
+        ngx_slab_free_locked(shpool, target->sockaddr);
+    }
+
+    ngx_slab_free_locked(shpool, target);
+
+    if (prev == NULL) {
+        peers->peer = peer;
+        goto ok;
+    }
+
+    if (peer == NULL) {
+        prev->next = NULL;
+        goto ok;
+    }
+
+    prev->next = peer;
+
+ok:
+    peers->number--;
+    peers->total_weight -= weight;
     peers->single = (peers->number == 1);
     peers->weighted = (peers->total_weight != peers->number);
 
