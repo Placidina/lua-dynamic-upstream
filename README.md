@@ -12,6 +12,7 @@
   * [add_peer](#add_peer)
   * [remove_peer](#remove_peer)
   * [set_peer_down](#set_peer_down)
+* [About](#about)
 
 ## Requirements
 
@@ -78,6 +79,10 @@ _Lua arguments:_
 
 No arguments.
 
+```sh
+ngx.dynamic.list_zones()
+```
+
 _Example:_
 
 ```sh
@@ -138,6 +143,10 @@ Required one argument:
 
 * `upstream zone name`
 
+```sh
+ngx.dynamic.describe_zone(zone)
+```
+
 _Example:_
 
 ```sh
@@ -175,16 +184,139 @@ server {
 
 Add new peer in upstream zone.
 
-TODO:
+_Lua arguments:_
+
+Required six arguments:
+
+* `upstream zone name`
+* `ip:port`
+* `weight`
+* `max_fails`
+* `fail_timeout`
+* `down`
+  * `true` - Offline
+  * `nil` - Online
+
+```sh
+ngx.dynamic.add_peer(zone, server, weight, max_fails, fail_timeout, down)
+```
+
+_Example:_
+
+```sh
+upstream foo {
+    zone dynamic_foo 32k;
+
+   server 127.0.0.1:8030;
+}
+
+server {
+    listen 80;
+
+    location = /dynamic/add {
+        default_type text/plain;
+        content_by_lua '
+            local dynamic = require "ngx.dynamic"
+            local ok, err = dynamic.add_peer("dynamic_foo", "127.0.0.1:8031", 1, 1, 10, nil)
+            if not ok then
+                ngx.say("unable to add peer: " .. err)
+            else
+                ngx.say("success to add peer")
+            end
+        ';
+    }
+}
+```
 
 ### remove_peer
 
 Remove peer in upstream zone.
 
-TODO:
+_Lua arguments:_
+
+Required two arguments:
+
+* `upstream zone name`
+* `ip:port`
+
+```sh
+ngx.dynamic.remove_peer(zone, server)
+```
+
+_Example:_
+
+```sh
+upstream foo {
+    zone dynamic_foo 32k;
+
+   server 127.0.0.1:8030;
+   server 127.0.0.1:8031;
+}
+
+server {
+    listen 80;
+
+    location /dynamic/remove {
+        default_type text/plain;
+        content_by_lua '
+            local dynamic = require "ngx.dynamic"
+            local ok, err = dynamic.remove_peer("dynamic_foo", "127.0.0.1:8030")
+            if not ok then
+                ngx.say("unable to remove peer: " .. err)
+            else
+                ngx.say("success to remove peer")
+            end
+        ';
+    }
+}
+```
 
 ### set_peer_down
 
 Set peer down or up.
 
-TODO:
+_Lua arguments:_
+
+Required three arguments:
+
+* `upstream zone name`
+* `ip:port`
+* `down`
+  * `true` - Offline
+  * `nil` - Online
+
+```sh
+ngx.dynamic.set_peer_down(zone, server, down)
+```
+
+_Example:_
+
+```sh
+upstream foo {
+    zone dynamic_foo 32k;
+
+   server 127.0.0.1:8030;
+   server 127.0.0.1:8031;
+}
+
+server {
+    listen 80;
+
+    location /dynamic/down {
+        default_type text/plain;
+        content_by_lua '
+            local dynamic = require "ngx.dynamic"
+            local ok, err = dynamic.remove_peer("set_peer_down", "127.0.0.1:8031", true)
+            if not ok then
+                ngx.say("unable to set peer down: " .. err)
+            else
+                ngx.say("success to set peer down")
+            end
+        ';
+    }
+}
+```
+
+## About
+
+This module meets the needs of the [`lua-upstream-nginx-module`](https://github.com/openresty/lua-upstream-nginx-module) module, building on it and also based on the [`ngx_dynamic_upstream`](https://github.com/cubicdaiya/ngx_dynamic_upstream) module.
