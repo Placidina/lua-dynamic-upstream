@@ -67,7 +67,7 @@ make install
 - [x] `list_zones` - Return all upstream zone names.
 - [x] `describe_zone` - Return all peers in upstream zone.
 - [x] `add_peer` - Add new peer in upstream zone.
-- [ ] `remove_peer` - Remove peer in upstream zone.
+- [x] `remove_peer` - Remove peer in upstream zone.
 - [x] `set_peer_down` - Set peer down or up.
 
 ### list_zones
