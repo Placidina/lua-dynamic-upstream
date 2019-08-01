@@ -13,6 +13,7 @@
   * [remove_peer](#remove_peer)
   * [set_peer_down](#set_peer_down)
 * [About](#about)
+* [See Also](#see-also)
 
 ## Requirements
 
@@ -320,3 +321,9 @@ server {
 ## About
 
 This module meets the needs of the [`lua-upstream-nginx-module`](https://github.com/openresty/lua-upstream-nginx-module) module, building on it and also based on the [`ngx_dynamic_upstream`](https://github.com/cubicdaiya/ngx_dynamic_upstream) module.
+
+## See Also
+
+* the ngx_lua module: https://github.com/openresty/lua-nginx-module
+* the lua-dynamic-healthcheck module: https://github.com/Placidina/lua-dynamic-healthcheck
+* OpenResty: http://openresty.org
