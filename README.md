@@ -74,6 +74,10 @@ make install
 
 Return one `array` of all upstream zone names.
 
+_Lua arguments:_
+
+No arguments.
+
 _Example:_
 
 ```sh
@@ -97,12 +101,13 @@ server {
         content_by_lua '
             local dynamic = require "ngx.dynamic"
             local zones, err = dynamic.list_zones()
-            if not ok then
-                ngx.say("unable to list upstream names: " .. err)
+            if not zones then
+                ngx.say("unable to list upstream zone names: " .. err)
             else
-                ngx.print("Upstream \n" )
+                ngx.say("Upstream zone names:")
                 for i, z in ipairs(zones) do
-                    ngx.print("    " .. z .. "\n")
+                    ngx.say("    ", z)
+                end
             end
         ';
     }
@@ -111,9 +116,60 @@ server {
 
 ### describe_zone
 
-Return all peers in upstream zone.
+Return one `array` of `object` for all peers in upstream zone.
 
-TODO:
+_Return `peer` informations:_
+
+* `current_weight`
+* `effective_weight`
+* `fail_timeout`
+* `fails`
+* `max_fails`
+* `name` - Socket address for the current peer.
+* `weight`
+* `accessed` - Timestamp for the last access (in seconds since the Epoch).
+* `checked` - Timestamp for the last check (in seconds since the Epoch).
+* `down` - Holds true if the peer has been marked as "down", otherwise this key is not present.
+* `conns` - Number of active connections to the peer.
+
+_Lua arguments:_
+
+Required one argument:
+
+* `upstream zone name`
+
+_Example:_
+
+```sh
+upstream foo {
+    zone dynamic_foo 32k;
+
+   server 127.0.0.1:8030;
+   server 127.0.0.1:8031;
+}
+
+server {
+    listen 80;
+
+    location = /dynamic/describe {
+        default_type text/plain;
+        content_by_lua '
+            local dynamic = require "ngx.dynamic"
+            local zones, err = dynamic.describe_zone("dynamic_foo")
+            if not zones then
+                ngx.say("unable to describe upstream zone: " .. err)
+            else
+                for i, zone in ipairs(zones) do
+                    ngx.say("Peer")
+                    for k, v in pairs(zone) do
+                        ngx.say("    ",k, " => ", v)
+                    end
+                end
+            end
+        ';
+    }
+}
+```
 
 ### add_peer
 
