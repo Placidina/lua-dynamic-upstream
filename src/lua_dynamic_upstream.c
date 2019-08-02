@@ -203,6 +203,7 @@ int lua_dynamic_upstream_add_peer(lua_State *L) {
     u_char *p;
     ngx_int_t weight, max_fails;
     time_t fail_timeout;
+    ngx_uint_t down;
 
     if (lua_gettop(L) != 6) {
         lua_pushnil(L);
@@ -270,6 +271,7 @@ int lua_dynamic_upstream_add_peer(lua_State *L) {
     weight = (ngx_int_t)luaL_checkint(L, 3);
     max_fails = (ngx_int_t)luaL_checkint(L, 4);
     fail_timeout = (time_t)luaL_checklong(L, 5);
+    down = lua_toboolean(L, 6);
 
     last->next->name = u.url;
     last->next->server = u.url;
@@ -280,7 +282,7 @@ int lua_dynamic_upstream_add_peer(lua_State *L) {
     last->next->current_weight = 0;
     last->next->max_fails = max_fails;
     last->next->fail_timeout = fail_timeout;
-    last->next->down = lua_toboolean(L, 6);
+    last->next->down = down;
 
     peers->number++;
     peers->total_weight += last->next->weight;
@@ -325,15 +327,9 @@ int lua_dynamic_upstream_remove_peer(lua_State *L) {
         return 2;
     }
 
-    peers = uscf->peer.data;
-    if (peers->number < 2) {
-        lua_pushnil(L);
-        lua_pushliteral(L, "not permitted to remove all servers\n");
-        return 2;
-    }
-
     target = NULL;
     prev = NULL;
+    peers = uscf->peer.data;
 
     for (peer = peers->peer; peer; peer = peer->next) {
         if (server.len == peer->name.len && ngx_strncmp(server.data, peer->name.data, peer->name.len) == 0) {
@@ -348,6 +344,12 @@ int lua_dynamic_upstream_remove_peer(lua_State *L) {
     if (target == NULL) {
         lua_pushnil(L);
         lua_pushliteral(L, "peer not found\n");
+        return 2;
+    }
+
+    if (peers->number < 2) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "not permitted to remove all servers\n");
         return 2;
     }
 
@@ -433,5 +435,7 @@ int lua_dynamic_upstream_set_peer_down(lua_State *L) {
     }
 
     target->down = lua_toboolean(L, 3);
+    lua_pushboolean(L, 1);
+
     return 1;
 }
