@@ -38,6 +38,17 @@ The following versions of Nginx should work with this module:
 
 This module is production ready.
 
+**Load balancing methods:**
+
+- [x] `round-robin`
+- [ ] `ip-hash`
+- [ ] `hash`
+- [ ] `hash consistent`
+- [ ] `least_conn`
+- [ ] `least_time`
+- [ ] `random`
+- [ ] `queue`
+
 ## Installation
 
 1. Grab the nginx source code from [nginx.org](http://nginx.org/).
